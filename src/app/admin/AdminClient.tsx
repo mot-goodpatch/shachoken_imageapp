@@ -58,7 +58,7 @@ export default function AdminClient({ submissions: initial }: Props) {
 
         {/* URL 発行 */}
         <section className="mb-16">
-          <h2 className="text-xs text-[#0066cc] tracking-widest mb-4">ルームを作成</h2>
+          <h2 className="text-xs text-[#0066cc] tracking-widest mb-8">ルームを作成</h2>
           <div className="flex gap-3 items-center">
             <input
               type="text"
