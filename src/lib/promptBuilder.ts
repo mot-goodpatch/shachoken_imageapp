@@ -88,9 +88,9 @@ export async function buildPrompt(
   const styleDesc = style ? (STYLE_CONFIG[style]?.description ?? style) : null
 
   const parts = [
-    `${subject}, isolated`,
     WHITE_BG,
     COMPOSITION,
+    `${subject}, isolated`,
     ...(styleDesc ? [styleDesc] : []),
     ...(translatedNote ? [translatedNote] : []),
   ]

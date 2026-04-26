@@ -59,6 +59,7 @@ export default function CreateClient() {
               autoFocus
               className="w-full px-4 py-3 bg-zinc-100 rounded-lg text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none"
             />
+
             <button
               onClick={handleCreate}
               disabled={!titleInput.trim() || isCreating}

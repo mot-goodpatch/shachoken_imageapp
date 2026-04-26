@@ -2,20 +2,26 @@ import { Redis } from '@upstash/redis'
 import { v4 as uuidv4 } from 'uuid'
 import { Submission, SubmitRequest } from '@/types'
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-})
+let _redis: Redis | null = null
+function getRedis(): Redis {
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    })
+  }
+  return _redis
+}
 
 const KEY = 'submissions'
 
 async function read(): Promise<Submission[]> {
-  const data = await redis.get<Submission[]>(KEY)
+  const data = await getRedis().get<Submission[]>(KEY)
   return data ?? []
 }
 
 async function write(submissions: Submission[]): Promise<void> {
-  await redis.set(KEY, submissions)
+  await getRedis().set(KEY, submissions)
 }
 
 export async function saveSubmission(req: SubmitRequest): Promise<Submission> {

@@ -28,6 +28,7 @@ export default function HomeClient({ titleJa, roomId }: Props) {
   const [submitKeyword, setSubmitKeyword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [titleEn, setTitleEn] = useState('')
+  const [formKey, setFormKey] = useState(0)
 
   useEffect(() => {
     translateJaToEn(titleJa).then(setTitleEn)
@@ -47,8 +48,8 @@ export default function HomeClient({ titleJa, roomId }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? '画像生成に失敗しました')
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data) throw new Error(data?.error ?? '画像生成に失敗しました')
       setResult(data)
       setHasGeneratedBefore(true)
     } catch (err) {
@@ -66,6 +67,15 @@ export default function HomeClient({ titleJa, roomId }: Props) {
   const handleSubmitSuccess = useCallback(() => {
     setHasSubmitted(true)
     localStorage.setItem('shachoken_submitted', 'true')
+  }, [])
+
+  const handleGoTop = useCallback(() => {
+    setResult(SAMPLE_RESULT)
+    setHasGeneratedBefore(false)
+    setHasSubmitted(false)
+    setShowModal(false)
+    setError(null)
+    setFormKey(k => k + 1)
   }, [])
 
   return (
@@ -87,6 +97,7 @@ export default function HomeClient({ titleJa, roomId }: Props) {
               </header>
 
               <GenerateForm
+                key={formKey}
                 onGenerate={handleGenerate}
                 onSubmit={handleOpenSubmit}
                 isGenerating={isGenerating}
@@ -133,6 +144,7 @@ export default function HomeClient({ titleJa, roomId }: Props) {
           roomId={roomId}
           onClose={() => setShowModal(false)}
           onSuccess={handleSubmitSuccess}
+          onGoTop={handleGoTop}
         />
       )}
     </main>

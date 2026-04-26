@@ -58,13 +58,13 @@ export default function AdminClient({ submissions: initial }: Props) {
 
         {/* URL 発行 */}
         <section className="mb-16">
-          <h2 className="text-xs text-zinc-400 tracking-widest mb-4">質問タイトルを入力</h2>
+          <h2 className="text-xs text-[#0066cc] tracking-widest mb-4">ルームを作成</h2>
           <div className="flex gap-3 items-center">
             <input
               type="text"
               value={titleInput}
               onChange={(e) => setTitleInput(e.target.value)}
-              placeholder="株式会社グッドパッチを何かに例えると？"
+              placeholder="質問タイトルを入力"
               className="flex-1 px-4 py-2.5 bg-zinc-100 rounded-lg text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none"
             />
             <button
@@ -90,7 +90,7 @@ export default function AdminClient({ submissions: initial }: Props) {
 
         {/* タイトル別一覧 */}
         <section>
-          <h2 className="text-xs text-zinc-400 tracking-widest mb-8">タイトル別 送信画像</h2>
+          <h2 className="text-xs text-[#0066cc] tracking-widest mb-8">ルーム別 送信画像</h2>
 
           {groups.length === 0 ? (
             <p className="text-zinc-300 text-sm">まだ送信された画像はありません</p>

@@ -11,9 +11,10 @@ interface Props {
   roomId?: string
   onClose: () => void
   onSuccess: () => void
+  onGoTop: () => void
 }
 
-export default function SubmitModal({ imageUrl, prompt, keyword, pageTitle, roomId, onClose, onSuccess }: Props) {
+export default function SubmitModal({ imageUrl, prompt, keyword, pageTitle, roomId, onClose, onSuccess, onGoTop }: Props) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [rating, setRating] = useState(0)
@@ -45,8 +46,8 @@ export default function SubmitModal({ imageUrl, prompt, keyword, pageTitle, room
         }),
       })
 
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? '送信に失敗しました')
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data) throw new Error(data?.error ?? '送信に失敗しました')
 
       onSuccess()
       setSuccess(true)
@@ -79,7 +80,7 @@ export default function SubmitModal({ imageUrl, prompt, keyword, pageTitle, room
                 みんなの画像を見る →
               </button>
               <button
-                onClick={onClose}
+                onClick={onGoTop}
                 className="w-full py-3 rounded-lg font-semibold text-sm text-zinc-500 bg-zinc-100 hover:bg-zinc-200 active:scale-[0.98] transition-all"
               >
                 Topに戻る
