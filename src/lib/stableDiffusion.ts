@@ -43,7 +43,7 @@ async function callPollinations(prompt: string, negative: string, model: string)
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`
 
   console.log('[generate] calling pollinations:', prompt)
-  const res = await fetch(url, { signal: AbortSignal.timeout(120_000) })
+  const res = await fetch(url, { signal: AbortSignal.timeout(55_000) })
 
   if (!res.ok) {
     throw new Error(`Pollinations API エラー: ${res.status}`)

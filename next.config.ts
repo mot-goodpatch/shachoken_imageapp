@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   allowedDevOrigins: ['*.ngrok-free.app', '*.ngrok.io'],
+  serverExternalPackages: ['sharp'],
 }
 
 export default nextConfig
