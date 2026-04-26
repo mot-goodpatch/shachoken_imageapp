@@ -122,7 +122,7 @@ export default function SubmitModal({ imageUrl, prompt, keyword, pageTitle, room
               {/* 満足度 */}
               <div>
                 <label className="block text-xs text-zinc-400 tracking-widest mb-2.5">
-                  満足度 <span className="text-zinc-300 font-normal">(任意)</span>
+                  満足度
                 </label>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -143,12 +143,12 @@ export default function SubmitModal({ imageUrl, prompt, keyword, pageTitle, room
               {/* コメント */}
               <div>
                 <label className="block text-xs text-zinc-400 tracking-widest mb-2.5">
-                  コメント <span className="text-zinc-300 font-normal">(任意)</span>
+                  コメント
                 </label>
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="生成された画像についての感想や、補足があれば教えてください！"
+                  placeholder="生成した画像の説明や、補足があれば教えてください！"
                   rows={3}
                   className="w-full px-4 py-2.5 bg-zinc-100 border-0 rounded-lg text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none resize-none transition"
                 />
