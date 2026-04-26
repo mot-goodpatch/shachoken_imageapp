@@ -1,3 +1,4 @@
+import sharp from 'sharp'
 import { put } from '@vercel/blob'
 import { GenerateRequest, GenerateResponse } from '@/types'
 import { buildPrompt, getNegativePrompt, STYLE_CONFIG } from './promptBuilder'
@@ -7,6 +8,14 @@ const IS_MOCK = process.env.SD_MOCK === 'true'
 async function saveImage(buffer: Buffer, filename: string): Promise<string> {
   const blob = await put(filename, buffer, { access: 'public' })
   return blob.url
+}
+
+const POLLINATIONS_TIMEOUT_MS = 50_000
+const MAX_RETRIES = 3
+const RETRY_DELAY_MS = 5_000
+
+async function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 async function callPollinations(prompt: string, negative: string, model: string): Promise<Buffer> {
@@ -22,14 +31,52 @@ async function callPollinations(prompt: string, negative: string, model: string)
   })
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`
 
-  console.log('[generate] calling pollinations:', prompt)
-  const res = await fetch(url, { signal: AbortSignal.timeout(55_000) })
+  let lastError: Error | null = null
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`[generate] calling pollinations (attempt ${attempt}/${MAX_RETRIES}):`, prompt)
+      const res = await fetch(url, { signal: AbortSignal.timeout(POLLINATIONS_TIMEOUT_MS) })
+      if (!res.ok) {
+        const err = new Error(`Pollinations API エラー: ${res.status}`)
+        ;(err as NodeJS.ErrnoException).code = String(res.status)
+        throw err
+      }
+      return Buffer.from(await res.arrayBuffer())
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
+      const isTimeout = lastError.name === 'TimeoutError' || lastError.name === 'AbortError'
+      const is429 = (lastError as NodeJS.ErrnoException).code === '429'
+      console.warn(`[generate] attempt ${attempt} failed (${lastError.name}): ${lastError.message}`)
+      if (attempt === MAX_RETRIES) break
+      if (isTimeout || is429) {
+        const delay = is429 ? RETRY_DELAY_MS * attempt : RETRY_DELAY_MS
+        console.log(`[generate] waiting ${delay}ms before retry...`)
+        await sleep(delay)
+      } else {
+        break
+      }
+    }
+  }
+  throw lastError!
+}
 
-  if (!res.ok) {
-    throw new Error(`Pollinations API エラー: ${res.status}`)
+// near-white pixels (R,G,B >= 230) → pure #FFFFFF to guarantee white background
+async function flattenToWhite(input: Buffer): Promise<Buffer> {
+  const img = sharp(input)
+  const { width, height } = await img.metadata()
+  const { data } = await img.raw().toBuffer({ resolveWithObject: true })
+
+  for (let i = 0; i < data.length; i += 3) {
+    if (data[i] >= 230 && data[i + 1] >= 230 && data[i + 2] >= 230) {
+      data[i] = 255
+      data[i + 1] = 255
+      data[i + 2] = 255
+    }
   }
 
-  return Buffer.from(await res.arrayBuffer())
+  return sharp(data, { raw: { width: width!, height: height!, channels: 3 } })
+    .png()
+    .toBuffer()
 }
 
 export async function generateImage(request: GenerateRequest): Promise<GenerateResponse> {
@@ -46,8 +93,9 @@ export async function generateImage(request: GenerateRequest): Promise<GenerateR
   console.log('[generate] negative:', negative)
   console.log('[generate] model:', model)
   const raw = await callPollinations(prompt, negative, model)
-  const filename = `generated/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`
-  const imageUrl = await saveImage(raw, filename)
+  const processed = await flattenToWhite(raw)
+  const filename = `generated/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.png`
+  const imageUrl = await saveImage(processed, filename)
   const seed = Math.floor(Math.random() * 2_147_483_647)
 
   return { imageUrl, prompt, seed }

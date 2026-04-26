@@ -14,14 +14,24 @@ const WHITE_BG = [
 ].join(', ')
 
 const COMPOSITION = [
+  'centered composition',
+  'subject centered horizontally and vertically',
   'wider frame composition',
   'ample pure white negative space all around the subject',
+  'large white margin at the bottom',
   'subject fully contained within the frame',
+  'entire object visible including the bottom',
   'no cropping',
+  'no bottom cropping',
 ].join(', ')
 
 const BASE_NEGATIVE = [
   'cropped',
+  'bottom cropped',
+  'bottom cut off',
+  'partially visible',
+  'cut off at bottom',
+  'off-center',
   'shadow',
   'drop shadow',
   'cast shadow',
