@@ -22,6 +22,9 @@ const COMPOSITION = [
 
 const BASE_NEGATIVE = [
   'cropped',
+  'shadow',
+  'drop shadow',
+  'cast shadow',
   'cut off shadow',
   'shadow touching border',
   'off-white',

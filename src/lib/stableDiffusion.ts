@@ -5,21 +5,32 @@ import { buildPrompt, getNegativePrompt, STYLE_CONFIG } from './promptBuilder'
 
 const IS_MOCK = process.env.SD_MOCK === 'true'
 
-// 閾値(240/255)以上の明るさのピクセルを純白 #ffffff に置換する
+// 背景を純白化: ブースト+ブラーでソフトなマスクを生成し、マスクが背景と判定した
+// ピクセルのみ元画像を純白に置換する。これによりエッジが滑らかになり影の汚れも消える。
 async function normalizeBackground(buffer: Buffer): Promise<Buffer> {
-  const THRESHOLD = 240
-  const img = sharp(buffer)
-  const { width, height } = await img.metadata()
+  const THRESHOLD = 235
+
+  const { width, height } = await sharp(buffer).metadata()
   if (!width || !height) return buffer
 
-  const raw = await img.ensureAlpha().raw().toBuffer()
-  for (let i = 0; i < raw.length; i += 4) {
-    const r = raw[i], g = raw[i + 1], b = raw[i + 2]
-    if (r >= THRESHOLD && g >= THRESHOLD && b >= THRESHOLD) {
-      raw[i] = 255; raw[i + 1] = 255; raw[i + 2] = 255
+  const origRaw = await sharp(buffer).ensureAlpha().raw().toBuffer()
+
+  // 明るさを増幅してから少しぼかすことで、背景の薄影・ノイズをまとめて検出できるマスクを作る
+  const maskRaw = await sharp(buffer)
+    .linear(1.2, 20)
+    .blur(2)
+    .ensureAlpha()
+    .raw()
+    .toBuffer()
+
+  for (let i = 0; i < origRaw.length; i += 4) {
+    const mr = maskRaw[i], mg = maskRaw[i + 1], mb = maskRaw[i + 2]
+    if (mr >= THRESHOLD && mg >= THRESHOLD && mb >= THRESHOLD) {
+      origRaw[i] = 255; origRaw[i + 1] = 255; origRaw[i + 2] = 255
     }
   }
-  return sharp(raw, { raw: { width, height, channels: 4 } })
+
+  return sharp(origRaw, { raw: { width, height, channels: 4 } })
     .jpeg({ quality: 95 })
     .toBuffer()
 }
