@@ -5,32 +5,48 @@ import { buildPrompt, getNegativePrompt, STYLE_CONFIG } from './promptBuilder'
 
 const IS_MOCK = process.env.SD_MOCK === 'true'
 
-// 背景を純白化: ブースト+ブラーでソフトなマスクを生成し、マスクが背景と判定した
-// ピクセルのみ元画像を純白に置換する。これによりエッジが滑らかになり影の汚れも消える。
+// 背景を純白化: 四辺からフラッドフィルで「画像境界と連結した明るいピクセル」を背景と判定し
+// 純白に置換する。被写体の暗いシルエット端が壁になるため、内部の白は保持される。
 async function normalizeBackground(buffer: Buffer): Promise<Buffer> {
-  const THRESHOLD = 235
+  const THRESHOLD = 220
 
   const { width, height } = await sharp(buffer).metadata()
   if (!width || !height) return buffer
 
-  const origRaw = await sharp(buffer).ensureAlpha().raw().toBuffer()
+  const raw = await sharp(buffer).ensureAlpha().raw().toBuffer()
+  const isBg = new Uint8Array(width * height)
+  const stack: number[] = []
 
-  // 明るさを増幅してから少しぼかすことで、背景の薄影・ノイズをまとめて検出できるマスクを作る
-  const maskRaw = await sharp(buffer)
-    .linear(1.2, 20)
-    .blur(2)
-    .ensureAlpha()
-    .raw()
-    .toBuffer()
+  const isBright = (px: number): boolean => {
+    const i = px * 4
+    return raw[i] >= THRESHOLD && raw[i + 1] >= THRESHOLD && raw[i + 2] >= THRESHOLD
+  }
 
-  for (let i = 0; i < origRaw.length; i += 4) {
-    const mr = maskRaw[i], mg = maskRaw[i + 1], mb = maskRaw[i + 2]
-    if (mr >= THRESHOLD && mg >= THRESHOLD && mb >= THRESHOLD) {
-      origRaw[i] = 255; origRaw[i + 1] = 255; origRaw[i + 2] = 255
+  const seed = (px: number) => {
+    if (!isBg[px] && isBright(px)) { isBg[px] = 1; stack.push(px) }
+  }
+
+  // 四辺から明るいピクセルを起点としてフィルを開始
+  for (let x = 0; x < width; x++) { seed(x); seed((height - 1) * width + x) }
+  for (let y = 1; y < height - 1; y++) { seed(y * width); seed(y * width + width - 1) }
+
+  while (stack.length) {
+    const px = stack.pop()!
+    const x = px % width, y = Math.floor(px / width)
+    if (x > 0)        seed(px - 1)
+    if (x < width - 1) seed(px + 1)
+    if (y > 0)        seed(px - width)
+    if (y < height - 1) seed(px + width)
+  }
+
+  for (let i = 0; i < width * height; i++) {
+    if (isBg[i]) {
+      const ri = i * 4
+      raw[ri] = 255; raw[ri + 1] = 255; raw[ri + 2] = 255
     }
   }
 
-  return sharp(origRaw, { raw: { width, height, channels: 4 } })
+  return sharp(raw, { raw: { width, height, channels: 4 } })
     .jpeg({ quality: 95 })
     .toBuffer()
 }
