@@ -1,4 +1,3 @@
-import sharp from 'sharp'
 import { put } from '@vercel/blob'
 import { GenerateRequest, GenerateResponse } from '@/types'
 import { buildPrompt, getNegativePrompt, STYLE_CONFIG } from './promptBuilder'
@@ -60,24 +59,6 @@ async function callPollinations(prompt: string, negative: string, model: string)
   throw lastError!
 }
 
-// near-white pixels (R,G,B >= 230) → pure #FFFFFF to guarantee white background
-async function flattenToWhite(input: Buffer): Promise<Buffer> {
-  const img = sharp(input)
-  const { width, height } = await img.metadata()
-  const { data } = await img.raw().toBuffer({ resolveWithObject: true })
-
-  for (let i = 0; i < data.length; i += 3) {
-    if (data[i] >= 230 && data[i + 1] >= 230 && data[i + 2] >= 230) {
-      data[i] = 255
-      data[i + 1] = 255
-      data[i + 2] = 255
-    }
-  }
-
-  return sharp(data, { raw: { width: width!, height: height!, channels: 3 } })
-    .png()
-    .toBuffer()
-}
 
 export async function generateImage(request: GenerateRequest): Promise<GenerateResponse> {
   const prompt = await buildPrompt(request.modifier, request.connector, request.object, request.style, request.note)
@@ -93,9 +74,8 @@ export async function generateImage(request: GenerateRequest): Promise<GenerateR
   console.log('[generate] negative:', negative)
   console.log('[generate] model:', model)
   const raw = await callPollinations(prompt, negative, model)
-  const processed = await flattenToWhite(raw)
-  const filename = `generated/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.png`
-  const imageUrl = await saveImage(processed, filename)
+  const filename = `generated/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`
+  const imageUrl = await saveImage(raw, filename)
   const seed = Math.floor(Math.random() * 2_147_483_647)
 
   return { imageUrl, prompt, seed }
