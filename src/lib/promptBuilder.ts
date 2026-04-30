@@ -101,11 +101,11 @@ export async function buildPrompt(
   const styleDesc = style ? (STYLE_CONFIG[style]?.description ?? style) : null
 
   const parts = [
-    WHITE_BG,
-    COMPOSITION,
     `${subject}, isolated`,
     ...(styleDesc ? [styleDesc] : []),
     ...(translatedNote ? [translatedNote] : []),
+    WHITE_BG,
+    COMPOSITION,
   ]
 
   return parts.join(', ')
