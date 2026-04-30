@@ -9,9 +9,9 @@ async function saveImage(buffer: Buffer, filename: string): Promise<string> {
   return blob.url
 }
 
-const POLLINATIONS_TIMEOUT_MS = 50_000
-const MAX_RETRIES = 3
-const RETRY_DELAY_MS = 5_000
+const POLLINATIONS_TIMEOUT_MS = 20_000
+const MAX_RETRIES = 2
+const RETRY_DELAY_MS = 3_000
 
 async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
